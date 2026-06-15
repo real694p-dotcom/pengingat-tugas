@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tugaskoe — Pengingat Tugas</title>
+<style>
+  :root{
+    --bg-deep: #0f1226;
+    --bg-mid: #181b3a;
+    --panel: #1f234a;
+    --panel-soft: #262b56;
+    --accent: #7c5cff;
+    --accent-soft: #a78bfa;
+    --accent2: #ff7d6b;
+    --text: #eef0ff;
+    --text-dim: #9aa0c9;
+    --border: rgba(255,255,255,0.08);
+    --done: #3ee08f;
+    --late: #ff6b6b;
+    --soon: #ffc857;
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+
+  body{
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(124,92,255,0.35), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(255,125,107,0.25), transparent 45%),
+      linear-gradient(160deg, var(--bg-deep), var(--bg-mid));
+    color: var(--text);
+    padding: 24px 16px 60px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .app{
+    width:100%;
+    max-width: 640px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 22px;
+  }
+
+  header .badge{
+    display:inline-block;
+    font-size:12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-soft);
+    background: rgba(124,92,255,0.12);
+    border: 1px solid rgba(124,92,255,0.3);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+
+  header h1{
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  header p{
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .stats{
+    display:flex;
+    gap:10px;
+    margin: 18px 0;
+  }
+
+  .stat{
+    flex:1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align:center;
+  }
+
+  .stat .num{
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .stat .label{
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat.total .num{ color: var(--accent-soft); }
+  .stat.done .num{ color: var(--done); }
+  .stat.late .num{ color: var(--late); }
+
+  form{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  }
+
+  .row{
+    display:flex;
+    gap: 10px;
+  }
+
+  input, select{
+    flex:1;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 12px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  input::placeholder{ color: var(--text-dim); }
+
+  input:focus, select:focus{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,92,255,0.2);
+  }
+
+  input[type="date"], input[type="time"]{
+    color-scheme: dark;
+  }
+
+  button.add-btn{
+    background: linear-gradient(135deg, var(--accent), #9b7bff);
+    color: white;
+    border:none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor:pointer;
+    transition: transform .12s, opacity .12s;
+  }
+
+  button.add-btn:hover{ opacity:0.92; }
+  button.add-btn:active{ transform: scale(0.97); }
+
+  .filters{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .filters button{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor:pointer;
+    transition: all .15s;
+  }
+
+  .filters button.active{
+    background: var(--accent);
+    color:white;
+    border-color: var(--accent);
+  }
+
+  .task-list{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+
+  .task{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display:flex;
+    align-items:flex-start;
+    gap: 12px;
+    transition: transform .12s, box-shadow .12s, opacity .2s;
+    position: relative;
+    overflow:hidden;
+  }
+
+  .task::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width: 4px;
+    background: var(--accent);
+  }
+
+  .task.done::before{ background: var(--done); }
+  .task.late::before{ background: var(--late); }
+  .task.soon::before{ background: var(--soon); }
+
+  .task:hover{ transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+
+  .task.done{ opacity: 0.55; }
+  .task.done .task-name{ text-decoration: line-through; }
+
+  .check{
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-soft);
+    cursor:pointer;
+    flex-shrink:0;
+    margin-top: 2px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: all .15s;
+    background: transparent;
+  }
+
+  .check.checked{
+    background: var(--done);
+    border-color: var(--done);
+  }
+
+  .check.checked::after{
+    content:"✓";
+    color:white;
+    font-size: 13px;
+    font-weight:bold;
+  }
+
+  .task-content{ flex:1; }
+
+  .task-name{
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+
+  .task-meta{
+    font-size: 12px;
+    color: var(--text-dim);
+    display:flex;
+    gap: 10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .tag{
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .tag.late{ background: rgba(255,107,107,0.15); color: var(--late); }
+  .tag.soon{ background: rgba(255,200,87,0.15); color: var(--soon); }
+  .tag.normal{ background: rgba(124,92,255,0.15); color: var(--accent-soft); }
+  .tag.done{ background: rgba(62,224,143,0.15); color: var(--done); }
+
+  .delete-btn{
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor:pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: color .15s;
+    flex-shrink:0;
+  }
+
+  .delete-btn:hover{ color: var(--late); }
+
+  .empty{
+    text-align:center;
+    padding: 50px 20px;
+    color: var(--text-dim);
+  }
+
+  .empty .emoji{ font-size: 40px; margin-bottom: 10px; }
+
+  footer{
+    text-align:center;
+    margin-top: 30px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 420px){
+    .row{ flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="badge">Tugaskoe</span>
+    <h1>Pengingat Tugas</h1>
+    <p>Tambahkan tugas, atur tanggal, jangan sampai kelewat deadline 🎯</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat total">
+      <div class="num" id="statTotal">0</div>
+      <div class="label">Total</div>
+    </div>
+    <div class="stat done">
+      <div class="num" id="statDone">0</div>
+      <div class="label">Selesai</div>
+    </div>
+    <div class="stat late">
+      <div class="num" id="statLate">0</div>
+      <div class="label">Terlambat</div>
+    </div>
+  </div>
+
+  <form id="taskForm">
+    <div class="row">
+      <input type="text" id="taskName" placeholder="Nama tugas, misal: Tugas Matematika Bab 3" required />
+    </div>
+    <div class="row">
+      <input type="date" id="taskDate" required />
+      <input type="time" id="taskTime" />
+    </div>
+    <button type="submit" class="add-btn">+ Tambah Tugas</button>
+  </form>
+
+  <div class="filters">
+    <button data-filter="all" class="active">Semua</button>
+    <button data-filter="active">Belum Selesai</button>
+    <button data-filter="done">Selesai</button>
+  </div>
+
+  <div class="task-list" id="taskList"></div>
+</div>
+
+<footer>Data tersimpan otomatis di perangkat ini, aman walau keluar aplikasi.</footer>
+
+<script>
+  const STORAGE_KEY = 'tugaskoe-data-v1';
+  let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let currentFilter = 'all';
+
+  // ---- Notifikasi ----
+  const REMINDER_MINUTES = 20;
+
+  function requestNotifPermission(){
+    if('Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+  }
+
+  function notify(title, body){
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification(title, { body, icon: '' });
+    }
+  }
+
+  function checkReminders(){
+    const now = new Date();
+    tasks.forEach(t => {
+      if(t.done || t.notified) return;
+      const deadline = getDeadline(t);
+      const diffMin = (deadline - now) / (1000 * 60);
+      if(diffMin <= REMINDER_MINUTES && diffMin > 0){
+        notify('⏰ Pengingat Tugas', `"${t.name}" jatuh tempo dalam ${Math.ceil(diffMin)} menit!`);
+        t.notified = true;
+        save();
+      }
+    });
+  }
+
+  const form = document.getElementById('taskForm');
+  const nameInput = document.getElementById('taskName');
+  const dateInput = document.getElementById('taskDate');
+  const timeInput = document.getElementById('taskTime');
+  const list = document.getElementById('taskList');
+  const filterBtns = document.querySelectorAll('.filters button');
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function getDeadline(t){
+    return new Date(t.date + 'T' + (t.time || '23:59'));
+  }
+
+  function getStatus(t){
+    if(t.done) return 'done';
+    const now = new Date();
+    const deadline = getDeadline(t);
+    const diff = deadline - now;
+    if(diff < 0) return 'late';
+    if(diff < 1000*60*60*24) return 'soon';
+    return 'normal';
+  }
+
+  function statusLabel(status){
+    return {
+      late: 'Terlambat',
+      soon: 'Segera',
+      normal: 'Terjadwal',
+      done: 'Selesai'
+    }[status];
+  }
+
+  function formatDate(t){
+    const d = getDeadline(t);
+    const opts = { day:'numeric', month:'short', year:'numeric' };
+    let str = d.toLocaleDateString('id-ID', opts);
+    if(t.time) str += ' • ' + t.time;
+    return str;
+  }
+
+  function render(){
+    let filtered = tasks;
+    if(currentFilter === 'active') filtered = tasks.filter(t => !t.done);
+    if(currentFilter === 'done') filtered = tasks.filter(t => t.done);
+
+    filtered = [...filtered].sort((a,b) => getDeadline(a) - getDeadline(b));
+
+    if(filtered.length === 0){
+      list.innerHTML = `
+        <div class="empty">
+          <div class="emoji">📭</div>
+          <div>Belum ada tugas di sini.</div>
+        </div>`;
+    } else {
+      list.innerHTML = filtered.map(t => {
+        const status = t.done ? 'done' : getStatus(t);
+        return `
+          <div class="task ${status}" data-id="${t.id}">
+            <div class="check ${t.done ? 'checked' : ''}" data-action="toggle"></div>
+            <div class="task-content">
+              <div class="task-name">${escapeHtml(t.name)}</div>
+              <div class="task-meta">
+                <span>📅 ${formatDate(t)}</span>
+                <span class="tag ${status}">${statusLabel(status)}</span>
+              </div>
+            </div>
+            <button class="delete-btn" data-action="delete">🗑️</button>
+          </div>`;
+      }).join('');
+    }
+
+    document.getElementById('statTotal').textContent = tasks.length;
+    document.getElementById('statDone').textContent = tasks.filter(t => t.done).length;
+    document.getElementById('statLate').textContent = tasks.filter(t => !t.done && getStatus(t) === 'late').length;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const date = dateInput.value;
+    const time = timeInput.value;
+    if(!name || !date) return;
+
+    tasks.push({
+      id: Date.now().toString(),
+      name,
+      date,
+      time,
+      done: false
+    });
+
+    save();
+    render();
+    form.reset();
+    nameInput.focus();
+  });
+
+  list.addEventListener('click', e => {
+    const action = e.target.dataset.action;
+    if(!action) return;
+    const taskEl = e.target.closest('.task');
+    const id = taskEl.dataset.id;
+    const task = tasks.find(t => t.id === id);
+
+    if(action === 'toggle'){
+      task.done = !task.done;
+      if(!task.done) task.notified = false;
+    } else if(action === 'delete'){
+      tasks = tasks.filter(t => t.id !== id);
+    }
+
+    save();
+    render();
+  });
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  render();
+  requestNotifPermission();
+  checkReminders();
+  setInterval(checkReminders, 60 * 1000); // cek setiap 1 menit
+</script>
+</body>
+</html>
